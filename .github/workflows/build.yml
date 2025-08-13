@@ -12,7 +12,10 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
+      fail-fast: false
+      max-parallel: 2
       matrix:
         include:
           - os: windows-latest
@@ -40,7 +43,27 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y libgl1-mesa-glx libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0
+        sudo apt-get install -y \
+          libgl1-mesa-dev \
+          libglib2.0-0 \
+          libxkbcommon-x11-0 \
+          libxcb-icccm4 \
+          libxcb-image0 \
+          libxcb-keysyms1 \
+          libxcb-randr0 \
+          libxcb-render-util0 \
+          libxcb-xinerama0 \
+          libxcb-xfixes0 \
+          libxcb-shape0 \
+          libxcb-cursor0 \
+          libfontconfig1 \
+          libfreetype6 \
+          libx11-6 \
+          libx11-xcb1 \
+          libxext6 \
+          libxrender1 \
+          libegl1-mesa \
+          libxrandr2
 
     - name: Install Python dependencies
       run: |
