@@ -9,6 +9,11 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+  actions: read
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
