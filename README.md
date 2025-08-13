@@ -1,4 +1,6 @@
-# AugmentCode-Free v2.0.0 (Click the star，continuously updating and maintaining)
+# AugmentCode-Free v2.0.0
+
+[![Build Status](https://github.com/skyame4/Augment-Free-Build/actions/workflows/build.yml/badge.svg)](https://github.com/skyame4/Augment-Free-Build/actions) (Click the star，continuously updating and maintaining)
 **点个星标，持续更新维护中……**
 # Telegram Communication Group
 
