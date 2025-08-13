@@ -147,20 +147,53 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch')
+    if: github.ref == 'refs/heads/main'
     
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
-      
+
+    - name: Generate version
+      id: version
+      run: |
+        VERSION="v2.0.0-$(date +%Y%m%d-%H%M%S)"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: ${{ steps.version.outputs.version }}
+        name: "AugmentCode-Free ${{ steps.version.outputs.version }}"
+        body: |
+          🎉 **AugmentCode-Free 自动构建发布**
+
+          ✨ **主要功能:**
+          - 智能路径自动搜索：支持非默认安装位置的IDE检测
+          - 增强清理引擎：4种清理模式(database_only/file_only/hybrid/aggressive)
+          - 跨平台支持：Windows、macOS、Linux全平台兼容
+          - 用户界面优化：隐藏补丁功能，简化操作流程
+
+          🔧 **技术改进:**
+          - 修复macOS Cursor路径配置问题
+          - 优化Windows多路径扩展检测
+          - 修复Ubuntu 24.04包名兼容性
+          - 修复PowerShell语法错误
+          - 增强错误处理和用户反馈
+
+          📦 **支持平台:**
+          - Windows x64 (可执行文件 + ZIP)
+          - macOS ARM64 (可执行文件 + 应用程序包 + TAR.GZ)
+          - Linux x64 (可执行文件 + TAR.GZ)
+
+          🚀 **构建信息:**
+          - 构建时间: $(date)
+          - 提交: ${{ github.sha }}
+          - 分支: ${{ github.ref_name }}
         files: |
           **/*.zip
           **/*.tar.gz
         draft: false
         prerelease: false
-        generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
