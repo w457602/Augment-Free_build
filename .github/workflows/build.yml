@@ -84,27 +84,30 @@ jobs:
     - name: Create release package (Windows)
       if: matrix.os == 'windows-latest'
       run: |
-        mkdir release
+        if not exist release mkdir release
+        if exist release\AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }} rmdir /s /q release\AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}
         xcopy /E /I dist\AugmentCode-Free release\AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}
-        copy README.md release\
-        copy LICENSE release\
+        copy README.md release\ 2>nul || echo "README.md not found"
+        copy LICENSE release\ 2>nul || echo "LICENSE not found"
 
     - name: Create release package (macOS)
       if: matrix.os == 'macos-latest'
       run: |
         mkdir -p release
+        rm -rf release/AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}*
         if [ -d "dist/AugmentCode-Free.app" ]; then
           cp -r dist/AugmentCode-Free.app release/AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}.app
         fi
         cp -r dist/AugmentCode-Free release/AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}
-        cp README.md LICENSE release/
+        cp README.md LICENSE release/ || true
 
     - name: Create release package (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
         mkdir -p release
+        rm -rf release/AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}
         cp -r dist/AugmentCode-Free release/AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}
-        cp README.md LICENSE release/
+        cp README.md LICENSE release/ || true
 
     - name: Create archive (Windows)
       if: matrix.os == 'windows-latest'
