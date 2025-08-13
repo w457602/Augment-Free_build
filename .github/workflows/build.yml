@@ -160,11 +160,27 @@ jobs:
 
     - name: List downloaded files
       run: |
-        echo "📁 Downloaded artifacts:"
-        find . -name "*.zip" -o -name "*.tar.gz" | head -20
+        echo "📁 Downloaded artifacts structure:"
+        ls -la
+        echo "📁 Artifact directories:"
+        find . -type d -name "*AugmentCode-Free*"
+        echo "📁 All files:"
+        find . -name "*.zip" -o -name "*.tar.gz"
         echo "📊 File count:"
         find . -name "*.zip" | wc -l
         find . -name "*.tar.gz" | wc -l
+
+    - name: Organize release files
+      run: |
+        mkdir -p release-files
+        # Copy unique files to release directory
+        find . -name "AugmentCode-Free-v2.0.0-windows-x64.zip" -exec cp {} release-files/ \;
+        find . -name "AugmentCode-Free-v2.0.0-linux-x64.tar.gz" -exec cp {} release-files/ \;
+        # For macOS, only copy one instance of each file
+        find . -name "AugmentCode-Free-v2.0.0-macos-arm64.tar.gz" | head -1 | xargs -I {} cp {} release-files/
+        find . -name "AugmentCode-Free-v2.0.0-macos-arm64.app.tar.gz" | head -1 | xargs -I {} cp {} release-files/
+        echo "📦 Release files prepared:"
+        ls -la release-files/
 
     - name: Generate version
       id: version
@@ -203,9 +219,7 @@ jobs:
           - 构建时间: $(date)
           - 提交: ${{ github.sha }}
           - 分支: ${{ github.ref_name }}
-        files: |
-          */AugmentCode-Free-v2.0.0-*.zip
-          */AugmentCode-Free-v2.0.0-*.tar.gz
+        files: release-files/*
         draft: false
         prerelease: false
       env:
