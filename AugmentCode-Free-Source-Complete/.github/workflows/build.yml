@@ -1,0 +1,138 @@
+name: Build AugmentCode-Free
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            arch: x64
+            ext: .exe
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+            ext: ""
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            ext: ""
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install system dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgl1-mesa-glx libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build executable (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        pyinstaller --onedir --windowed --name=AugmentCode-Free --add-data="config;config" --add-data="languages;languages" --hidden-import=PyQt6.QtCore --hidden-import=PyQt6.QtGui --hidden-import=PyQt6.QtWidgets --hidden-import=sqlite3 main.py
+
+    - name: Build executable (macOS/Linux)
+      if: matrix.os != 'windows-latest'
+      run: |
+        pyinstaller --onedir --windowed --name=AugmentCode-Free --add-data="config:config" --add-data="languages:languages" --hidden-import=PyQt6.QtCore --hidden-import=PyQt6.QtGui --hidden-import=PyQt6.QtWidgets --hidden-import=sqlite3 main.py
+
+    - name: Create release package (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        mkdir release
+        xcopy /E /I dist\AugmentCode-Free release\AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}
+        copy README.md release\
+        copy LICENSE release\
+
+    - name: Create release package (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        mkdir -p release
+        if [ -d "dist/AugmentCode-Free.app" ]; then
+          cp -r dist/AugmentCode-Free.app release/AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}.app
+        fi
+        cp -r dist/AugmentCode-Free release/AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}
+        cp README.md LICENSE release/
+
+    - name: Create release package (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        mkdir -p release
+        cp -r dist/AugmentCode-Free release/AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}
+        cp README.md LICENSE release/
+
+    - name: Create archive (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        powershell Compress-Archive -Path release\AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }} -DestinationPath AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}.zip
+
+    - name: Create archive (macOS/Linux)
+      if: matrix.os != 'windows-latest'
+      run: |
+        tar -czf AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz -C release AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}
+        if [ -d "release/AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}.app" ]; then
+          tar -czf AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}.app.tar.gz -C release AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}.app
+        fi
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: AugmentCode-Free-${{ matrix.platform }}-${{ matrix.arch }}
+        path: |
+          *.zip
+          *.tar.gz
+          release/
+
+    - name: Test executable (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        release\AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}\AugmentCode-Free.exe --help || echo "GUI application, no help output expected"
+
+    - name: Test executable (macOS/Linux)
+      if: matrix.os != 'windows-latest'
+      run: |
+        chmod +x release/AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}/AugmentCode-Free
+        release/AugmentCode-Free-v2.0.0-${{ matrix.platform }}-${{ matrix.arch }}/AugmentCode-Free --help || echo "GUI application, no help output expected"
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          **/*.zip
+          **/*.tar.gz
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
